@@ -1,0 +1,31 @@
+{
+  "name": "event-sourcing",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "lint": "eslint . --ext .ts",
+    "lint:fix": "eslint . --fix --ext .ts",
+    "build": "tsc"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/jest": "^26.0.24",
+    "@typescript-eslint/eslint-plugin": "^4.28.5",
+    "dotenv": "^10.0.0",
+    "eslint": "^7.30.0",
+    "jest": "^27.0.6",
+    "nanoid": "^3.1.23",
+    "ts-jest": "^27.0.4",
+    "typescript": "^4.3.5"
+  },
+  "dependencies": {
+    "async": "^3.2.0",
+    "aws-sdk": "^2.951.0",
+    "dynamodb-toolbox": "^0.3.4",
+    "node-rdkafka": "^2.10.1"
+  }
+}
