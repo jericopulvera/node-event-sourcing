@@ -1,11 +1,5 @@
-import { Default, EventStore } from "./EventStore";
-
-interface Event {
-  aggregateId: string;
-  version: number;
-  event: string;
-  payload: unknown;
-}
+import EventStore from "./EventStore";
+import { EventDto } from "./Dto";
 
 class AggregateRoot {
   public aggregateId: string;
@@ -33,20 +27,20 @@ class AggregateRoot {
 
       this.apply(snapshotData);
 
-      await Default.transactWrite([
-        EventStore.putTransaction({
+      await EventStore.table.transactWrite([
+        EventStore.entity.putTransaction({
           aggregateId: this.aggregateId,
           version: this.version,
           event: eventData.event,
           payload: eventData.payload,
           active: 1,
         }),
-        EventStore.putTransaction(snapshotData),
+        EventStore.entity.putTransaction(snapshotData),
       ]);
 
       this.version = this.version + 2;
     } else {
-      await EventStore.put({
+      await EventStore.entity.put({
         aggregateId: this.aggregateId,
         version: this.version,
         event: eventData.event,
@@ -64,7 +58,7 @@ class AggregateRoot {
 
     if (this.snapshotIn) {
       events = (
-        await EventStore.query(aggregateId, {
+        await EventStore.entity.query(aggregateId, {
           limit: this.snapshotIn + 1,
           reverse: true,
         })
@@ -72,7 +66,7 @@ class AggregateRoot {
 
       events = events.reverse();
     } else {
-      events = (await EventStore.query(aggregateId)).Items;
+      events = (await EventStore.entity.query(aggregateId)).Items;
     }
 
     events.forEach((event) => {

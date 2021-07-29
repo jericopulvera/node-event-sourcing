@@ -1,11 +1,11 @@
 const COMMIT_TIME_INTERVAL = 5000;
 
 class CommitManager {
-  public consumer: any;
+  public consumer: unknown;
   public consumerConcurrency: string | number = 10;
-  public msgQueue: any = [];
-  public partitionsData: any = [];
-  public lastCommited: any = [];
+  public msgQueue: unknown = [];
+  public partitionsData: unknown = [];
+  public lastCommited: unknown = [];
 
   public start(consumer) {
     this.consumer = consumer;
@@ -65,8 +65,7 @@ class CommitManager {
 
         if (lastProcessedRecord) {
           offsetsToCommit.push({
-            // @ts-ignore
-            partition: key - 0,
+            partition: Number(key) - 0,
             offset: lastProcessedRecord.offset + 1,
             topic: lastProcessedRecord.topic,
           });

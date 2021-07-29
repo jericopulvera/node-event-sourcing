@@ -2,47 +2,31 @@ import { KafkaConsumer } from "node-rdkafka";
 import queue from "async/queue";
 import CommitManager from "./CommitManager";
 import Kafka from "node-rdkafka";
+import { EventDto } from "../Dto";
 
 class Consumer {
   public consumer: KafkaConsumer;
   public maxParallelHandles: string | number = 10;
   public maxQueueSize: string | number = 30;
   public paused = true;
-  public msgQueue: any = [];
-  public projectors: any = [];
-  public listeners: any = [];
+  public msgQueue: unknown = [];
+  public projectors: unknown = [];
+  public listeners: unknown = [];
 
-  public globalConfig: {
-    brokers: string[];
-    groupId: string;
-    allowAutoCreateTopics: boolean;
-  } = {
-    brokers: [],
-    groupId: "",
-    allowAutoCreateTopics: true,
-  };
+  public globalConfig: Kafka.ConsumerGlobalConfig = {};
+  public topicConfig: Kafka.ConsumerTopicConfig = {};
 
-  public topicConfig: {
-    offsetReset: string;
-  } = { offsetReset: "beginning" };
-
-  constructor(projectors, listeners) {
+  constructor(
+    projectors: AsyncGeneratorFunction[],
+    listeners: AsyncGeneratorFunction[],
+    globalConfig: Kafka.ConsumerGlobalConfig,
+    topicConfig: Kafka.ConsumerTopicConfig
+  ) {
     this.projectors = projectors;
     this.listeners = listeners;
 
-    this.globalConfig.brokers = process.env.KAFKA_BROKERS.split(",")
-      .filter((i) => i)
-      .map((i) => i.trim());
-
-    this.globalConfig.groupId = process.env.KAFKA_GROUP_ID || "example-group";
-
-    this.globalConfig.allowAutoCreateTopics = process.env
-      .KAFKA_AUTO_CREATE_TOPICS
-      ? true
-      : false;
-
-    this.topicConfig.offsetReset =
-      process.env.KAFKA_OFFSET_RESET || "beginning";
+    this.globalConfig = globalConfig;
+    this.topicConfig = topicConfig;
 
     this.maxParallelHandles = isNaN(
       Number(process.env.KAFKA_CONSUMER_MAX_PARALLEL_HANDLES)
@@ -55,7 +39,10 @@ class Consumer {
       : 30;
   }
 
-  public async handleCB(data, handler) {
+  public async handleCB(
+    data: unknown,
+    handler: AsyncGeneratorFunction
+  ): Promise<void> {
     try {
       CommitManager.notifyStartProcessing(data);
       await handler(data);
@@ -66,7 +53,7 @@ class Consumer {
     }
   }
 
-  public async handleData(data) {
+  public handleData(data: EventDto): void {
     const hasHandler =
       this.projectors.some((i) => i.name.slice(2) === data.topic) ||
       this.listeners.some((i) => i.name.slice(2) === data.topic);
@@ -82,7 +69,10 @@ class Consumer {
     }
   }
 
-  public onRebalance(err, assignments) {
+  public onRebalance(
+    err: Kafka.LibrdKafkaError,
+    assignments: Kafka.Assignment[]
+  ): void {
     if (err.code === Kafka.CODES.ERRORS.ERR__ASSIGN_PARTITIONS) {
       this.consumer.assign(assignments);
     } else if (err.code === Kafka.CODES.ERRORS.ERR__REVOKE_PARTITIONS) {
@@ -90,7 +80,7 @@ class Consumer {
         this.consumer.resume(assignments);
         this.paused = false;
       }
-      this.msgQueue.remove((d, p) => {
+      this.msgQueue.remove(() => {
         return true;
       });
       this.consumer.unassign();
@@ -100,20 +90,14 @@ class Consumer {
     }
   }
 
-  public async start() {
+  public start(): void {
     this.consumer = new Kafka.KafkaConsumer(
       {
-        "metadata.broker.list": this.globalConfig.brokers.length
-          ? this.globalConfig.brokers
-          : "localhost:9092",
-        "group.id": this.globalConfig.groupId,
-        "allow.auto.create.topics": this.globalConfig.allowAutoCreateTopics,
-        "enable.auto.commit": false,
-        log_level: 6,
+        ...this.globalConfig,
         rebalance_cb: (err, assignments) => this.onRebalance(err, assignments),
       },
       {
-        "auto.offset.reset": this.topicConfig.offsetReset,
+        ...this.topicConfig,
       }
     );
 
