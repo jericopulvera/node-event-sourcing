@@ -1,8 +1,8 @@
 import CartAggregateRoot from "./fixtures/CartAggregateRoot";
-const { nanoid } = require("nanoid");
+import { nanoid } from "nanoid";
 
 describe("AggregateRoot", () => {
-  test("Can create and apply event", async () => {
+  test("can create and apply event", async () => {
     const aggregateId = nanoid();
 
     let cartAggregate = await new CartAggregateRoot().retrieve(aggregateId);
@@ -20,7 +20,7 @@ describe("AggregateRoot", () => {
     ]);
   });
 
-  test("Can create snapshot", async () => {
+  test("can create snapshot", async () => {
     const aggregateId = nanoid();
 
     for (let index = 0; index < 20; index++) {

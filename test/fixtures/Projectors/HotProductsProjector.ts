@@ -1,14 +1,16 @@
 class HotProductsProjector {
-  public async onCartItemAdded(payload) {
+  public async onCartItemAdded(payload: {
+    productId: string;
+    quantity: number;
+  }): Promise<void> {
     if (!payload.productId) return;
   }
 
-  public async onCartItemRemoved(payload) {
+  public async onCartItemRemoved(payload: {
+    productId: string;
+    quantity: number;
+  }): Promise<void> {
     if (!payload.productId) return;
-  }
-
-  public async ontest() {
-    console.log("ON TEST");
   }
 }
 

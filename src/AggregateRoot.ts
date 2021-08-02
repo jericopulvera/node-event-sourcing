@@ -4,11 +4,17 @@ import { EventDto } from "./Dto";
 class AggregateRoot {
   public aggregateId: string;
   public version = 0;
-  public events: Event[] = [];
+  public events: EventDto[] = [];
   public snapshotIn = 0;
 
-  public async createEvent(eventData: Event): Promise<void> {
+  public async createEvent(eventData: EventDto): Promise<void> {
     this.apply(eventData);
+
+    eventData = {
+      ...eventData,
+      aggregateId: this.aggregateId,
+      version: this.version,
+    };
 
     if (this.snapshotIn && this.events.length % this.snapshotIn === 0) {
       const payload = JSON.parse(JSON.stringify(this));
@@ -27,25 +33,14 @@ class AggregateRoot {
 
       this.apply(snapshotData);
 
-      await EventStore.table.transactWrite([
-        EventStore.entity.putTransaction({
-          aggregateId: this.aggregateId,
-          version: this.version,
-          event: eventData.event,
-          payload: eventData.payload,
-          active: 1,
-        }),
-        EventStore.entity.putTransaction(snapshotData),
+      await EventStore.transactWrite([
+        EventStore.createEventTransaction(eventData),
+        EventStore.createEventTransaction(snapshotData),
       ]);
 
       this.version = this.version + 2;
     } else {
-      await EventStore.entity.put({
-        aggregateId: this.aggregateId,
-        version: this.version,
-        event: eventData.event,
-        payload: eventData.payload,
-      });
+      await EventStore.createEvent(eventData);
 
       this.version++;
     }
@@ -58,7 +53,7 @@ class AggregateRoot {
 
     if (this.snapshotIn) {
       events = (
-        await EventStore.entity.query(aggregateId, {
+        await EventStore.query(aggregateId, {
           limit: this.snapshotIn + 1,
           reverse: true,
         })
@@ -66,7 +61,7 @@ class AggregateRoot {
 
       events = events.reverse();
     } else {
-      events = (await EventStore.entity.query(aggregateId)).Items;
+      events = (await EventStore.query(aggregateId)).Items;
     }
 
     events.forEach((event) => {
@@ -78,7 +73,7 @@ class AggregateRoot {
     return this;
   }
 
-  public apply(event: Event): void {
+  public apply(event: EventDto): void {
     this[`apply${event.event}`](event.payload);
     this.events.push(event);
   }

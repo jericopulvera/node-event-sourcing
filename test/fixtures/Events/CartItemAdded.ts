@@ -4,14 +4,14 @@ interface Item {
 }
 
 class CartItemAdded {
-  public event = "CartItemAdded";
+  event = "CartItemAdded";
 
-  public payload: Item = {
+  payload: Item = {
     productId: null,
     quantity: 0,
   };
 
-  constructor(payload) {
+  constructor(payload: Item) {
     this.payload = payload;
   }
 }

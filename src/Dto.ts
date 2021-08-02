@@ -1,6 +1,6 @@
 interface EventDto {
-  aggregateId: string;
-  version: number;
+  aggregateId?: string;
+  version?: number;
   event: string;
   payload: unknown;
 }

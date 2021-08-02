@@ -70,16 +70,37 @@ class EventStore {
       .promise();
   }
 
-  async createEvent(eventData: EventDto, isTransaction: boolean) {
-    if (isTransaction) {
-      return {
-        Put: {
-          TableName: this.tableName,
-          Item: eventData,
+  async query(
+    aggregateId: string,
+    options?: { limit: number; reverse: boolean }
+  ) {
+    return this.documentClient
+      .query({
+        TableName: this.tableName,
+        KeyConditionExpression: "aggregateId = :aggregateId",
+        ExpressionAttributeValues: {
+          ":aggregateId": aggregateId,
         },
-      };
-    }
+        Limit: options?.limit,
+        ScanIndexForward: options?.reverse ? false : true,
+      })
+      .promise();
+  }
 
+  createEventTransaction(eventData: EventDto) {
+    return {
+      Put: {
+        TableName: this.tableName,
+        Item: {
+          ...eventData,
+          active: 1,
+          committedAt: Date.now(),
+        },
+      },
+    };
+  }
+
+  async createEvent(eventData: EventDto) {
     return await this.documentClient
       .put({
         TableName: this.tableName,
@@ -88,6 +109,14 @@ class EventStore {
           active: 1,
           committedAt: Date.now(),
         },
+      })
+      .promise();
+  }
+
+  async transactWrite(events: DynamoDB.DocumentClient.TransactWriteItemList) {
+    return await this.documentClient
+      .transactWrite({
+        TransactItems: events,
       })
       .promise();
   }
