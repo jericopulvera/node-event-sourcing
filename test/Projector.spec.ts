@@ -1,5 +1,11 @@
+import Runner from '../src/Runner'
+
 describe("Projector", () => {
-  test.skip("Can project", async () => {
+  beforeAll(() => {
+    Runner.run()
+  })
+
+  test("Can project", async () => {
     expect(2 + 2).toBe(3);
   });
 });

@@ -1,8 +1,9 @@
 import Consumer from "./Messaging/Consumer";
 
 class Runner {
-  public projectors = [];
-  public listeners = [];
+  projectors = [];
+  listeners = [];
+  consumer;
 
   async registerListeners(listeners) {
     for (const listener of listeners) {
@@ -29,7 +30,12 @@ class Runner {
   }
 
   async run() {
-    await new Consumer(this.projectors, this.listeners).start();
+    this.consumer = new Consumer(this.projectors, this.listeners, {}, {});
+    await this.consumer.start();
+  }
+
+  async disconnect() {
+    await this.consumer.disconnect();
   }
 }
 
