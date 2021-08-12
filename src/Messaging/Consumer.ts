@@ -1,29 +1,41 @@
 import { KafkaConsumer } from "node-rdkafka";
-import queue from "async/queue";
+import { queue, QueueObject } from "async";
 import CommitManager from "./CommitManager";
 import Kafka from "node-rdkafka";
-import { EventDto } from "../Dto";
+import { EventDto, EventHandlersClassType } from "../Dto";
+
+function isJson(item: string | null) {
+  item = typeof item !== "string" ? JSON.stringify(item) : item;
+
+  try {
+    item = JSON.parse(item);
+  } catch (e) {
+    return false;
+  }
+
+  if (typeof item === "object" && item !== null) {
+    return true;
+  }
+
+  return false;
+}
 
 class Consumer {
-  public consumer: KafkaConsumer;
-  public maxParallelHandles: string | number = 10;
-  public maxQueueSize: string | number = 30;
-  public paused = true;
-  public msgQueue: unknown = [];
-  public projectors: unknown = [];
-  public listeners: unknown = [];
-
-  public globalConfig: Kafka.ConsumerGlobalConfig = {};
-  public topicConfig: Kafka.ConsumerTopicConfig = {};
+  consumer!: KafkaConsumer;
+  msgQueue!: QueueObject<Kafka.Message>;
+  globalConfig: Kafka.ConsumerGlobalConfig = {};
+  topicConfig: Kafka.ConsumerTopicConfig = {};
+  eventHandlers: EventHandlersClassType[] = [];
+  maxParallelHandles: string | number = 10;
+  maxQueueSize: string | number = 30;
+  paused = true;
 
   constructor(
-    projectors: AsyncGeneratorFunction[],
-    listeners: AsyncGeneratorFunction[],
+    eventHandlers: EventHandlersClassType[],
     globalConfig: Kafka.ConsumerGlobalConfig,
     topicConfig: Kafka.ConsumerTopicConfig
   ) {
-    this.projectors = projectors;
-    this.listeners = listeners;
+    this.eventHandlers = eventHandlers;
 
     this.globalConfig = globalConfig;
     this.topicConfig = topicConfig;
@@ -40,32 +52,29 @@ class Consumer {
   }
 
   public async handleCB(
-    data: unknown,
-    handler: AsyncGeneratorFunction
+    data: Kafka.Message,
+    handler: (arg0: EventDto) => void
   ): Promise<void> {
     try {
       CommitManager.notifyStartProcessing(data);
-      await handler(data);
+
+      if (data.value && isJson(data.value?.toString())) {
+        const message = JSON.parse(data.value.toString());
+        await handler(message);
+      }
+
+      CommitManager.notifyFinishedProcessing(data);
     } catch (e) {
       console.error(`Error handling message: ${e}`);
-    } finally {
-      CommitManager.notifyFinishedProcessing(data);
     }
   }
 
-  public handleData(data: EventDto): void {
-    const hasHandler =
-      this.projectors.some((i) => i.name.slice(2) === data.topic) ||
-      this.listeners.some((i) => i.name.slice(2) === data.topic);
+  public handleData(data: Kafka.Message): void {
+    this.msgQueue.push(data);
 
-    console.log({ hasHandler, topic: data.topic });
-    if (hasHandler) {
-      this.msgQueue.push(data);
-
-      if (this.msgQueue.length() > this.maxQueueSize) {
-        this.consumer.pause(this.consumer.assignments());
-        this.paused = true;
-      }
+    if (this.msgQueue.length() > this.maxQueueSize) {
+      this.consumer.pause(this.consumer.assignments());
+      this.paused = true;
     }
   }
 
@@ -94,7 +103,10 @@ class Consumer {
     this.consumer = new Kafka.KafkaConsumer(
       {
         ...this.globalConfig,
-        rebalance_cb: (err, assignments) => this.onRebalance(err, assignments),
+        rebalance_cb: (
+          err: Kafka.LibrdKafkaError,
+          assignments: Kafka.Assignment[]
+        ) => this.onRebalance(err, assignments),
       },
       {
         ...this.topicConfig,
@@ -102,17 +114,26 @@ class Consumer {
     );
 
     this.msgQueue = queue(async (data, done) => {
-      const handler =
-        this.projectors.find((i) => i.name.slice(2) === data.topic) ||
-        this.listeners.find((i) => i.name.slice(2) === data.topic);
+      let handler;
 
-      console.log({ handler });
-      await this.handleCB(data, handler);
+      this.eventHandlers.forEach((eventHandler) => {
+        if (eventHandler.name.slice(0, -8) === data.topic) {
+          handler = new eventHandler()["handle"];
+        }
+
+        if (typeof new eventHandler()[`on${data.topic}`] === "function") {
+          handler = new eventHandler()[`on${data.topic}`];
+        }
+      });
+
+      if (handler) {
+        await this.handleCB(data, handler);
+      }
+
       done();
-    }, this.maxParallelHandles);
+    }, Number(this.maxParallelHandles));
 
     this.msgQueue.drain(async () => {
-      console.log("draining");
       if (this.paused) {
         this.consumer.resume(this.consumer.assignments());
         this.paused = false;
@@ -121,7 +142,23 @@ class Consumer {
 
     this.consumer.on("ready", (arg) => {
       console.log("consumer ready." + JSON.stringify(arg));
-      this.consumer.subscribe(["test"]);
+      const topics: string[] = [];
+
+      this.eventHandlers.forEach((eventHandler) => {
+        if (eventHandler.name.slice(-8) === "Listener") {
+          topics.push(eventHandler.name.slice(0, -8));
+        } else {
+          Object.getOwnPropertyNames(eventHandler.prototype).forEach(
+            (value) => {
+              if (value.slice(0, 2) === "on") {
+                topics.push(value.slice(2));
+              }
+            }
+          );
+        }
+      });
+
+      this.consumer.subscribe(topics); // Subscribe to Listeners Event and Projector onSomething event
       this.consumer.consume();
 
       CommitManager.start(this.consumer);
@@ -135,29 +172,10 @@ class Consumer {
     });
 
     this.consumer.connect();
+  }
 
-    ["unhandledRejection", "uncaughtException"].map((type) => {
-      process.on(type, async (e) => {
-        try {
-          console.log(`process.on ${type}`);
-          console.error(e);
-          await this.consumer.disconnect();
-          process.exit(0);
-        } catch (_) {
-          process.exit(1);
-        }
-      });
-    });
-
-    ["SIGTERM", "SIGINT", "SIGUSR2"].map((type) => {
-      process.once(type, async () => {
-        try {
-          await this.consumer.disconnect();
-        } finally {
-          process.kill(process.pid, type);
-        }
-      });
-    });
+  public async disconnect(): Promise<void> {
+    await this.consumer.disconnect();
   }
 }
 

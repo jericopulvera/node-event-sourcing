@@ -23,10 +23,12 @@ exports.handler = async (event, context) => {
     if (record.eventName == "INSERT") {
       const data = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
 
-      await producer.send({
-        topic: data.event,
-        messages: [{ value: JSON.stringify(data) }],
-      });
+      if (data.event) {
+        await producer.send({
+          topic: data.event,
+          messages: [{ value: JSON.stringify(data) }],
+        });
+      }
     }
   }
 

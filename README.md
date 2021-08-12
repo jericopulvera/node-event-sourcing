@@ -25,7 +25,7 @@
 
 - Events are created via AggregateRoot.createEvent method
 - Events created are automatically published into Kafka topic via DynamoDB Stream (Production)
-or Polling (Dev)
+  or Polling (Dev)
 
 ### Listener
 
@@ -40,13 +40,13 @@ or Polling (Dev)
 ### Configuration
 
 ```ts
-process.env.KAFKA_BROKERS = "localhost:9092,localhost:9093" // default: localhost:9092
-process.env.KAFKA_GROUP_ID = "group" // default: example-group
-process.env.KAFKA_ENABLED = true // default: true
-process.env.KAFKA_CONSUMER_MAX_PARALLEL_HANDLES = 10 // default: 10
-process.env.KAFKA_CONSUMER_MAX_QUEUE_SIZE = 30 // default: 30
-process.env.KAFKA_AUTO_CREATE_TOPICS = true // default: true
-process.env.KAFKA_OFFSET_RESET = 'beginning' // default: beginning, options: beginning, latest
+process.env.KAFKA_BROKERS = "localhost:9092,localhost:9093"; // default: localhost:9092
+process.env.KAFKA_GROUP_ID = "group"; // default: example-group
+process.env.KAFKA_ENABLED = true; // default: true
+process.env.KAFKA_CONSUMER_MAX_PARALLEL_HANDLES = 10; // default: 10
+process.env.KAFKA_CONSUMER_MAX_QUEUE_SIZE = 30; // default: 30
+process.env.KAFKA_AUTO_CREATE_TOPICS = true; // default: true
+process.env.KAFKA_OFFSET_RESET = "beginning"; // default: beginning, options: beginning, latest
 ```
 
 ### Creating Aggregate
@@ -54,34 +54,45 @@ process.env.KAFKA_OFFSET_RESET = 'beginning' // default: beginning, options: beg
 ### Creating Event Listener
 
 ```ts
-import { Listener } from 'node-event-sourcing'
+import { Listener } from "node-event-sourcing";
 
-class CartItemAddedListener extends Listener {
-    public async handle() {
-        // ...
-    }
+class CartItemAddedListener implements Listener {
+  public async handle() {
+    // ...
+  }
 }
 
-export default CartItemAddedListener
+export default CartItemAddedListener;
+```
+
+### Creating Projections
+
+```ts
+import { Projector } from "node-event-sourcing";
+
+class HotProductsProjector implements Projector {
+  public async onCartItemAdded() {
+    // ...
+  }
+}
+
+export default HotProductsProjector;
 ```
 
 ### Running Event Listener
 
 ```ts
-import { Runner } from 'node-event-sourcing'
+import { Runner } from "node-event-sourcing";
 
-Runner.registerListeners([
-    'App/Domains/Cart/Listeners/CartListener'
-])
+Runner.registerListeners(["App/Domains/Cart/Listeners/CartListener"]);
 
-Runner.registerProjectors([
-    'App/Domains/Cart/Projectors/CartProjector'
-])
+Runner.registerProjectors(["App/Domains/Cart/Projectors/CartProjector"]);
 
-Runner.run().then(() => {
-    console.log('Event Sourcing is running...')
-}).catch(error => {
-    console.log(error.message)
-})
+Runner.run()
+  .then(() => {
+    console.log("Event Sourcing is running...");
+  })
+  .catch((error) => {
+    console.log(error.message);
+  });
 ```
-

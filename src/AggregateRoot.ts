@@ -1,8 +1,9 @@
 import EventStore from "./EventStore";
 import { EventDto } from "./Dto";
+import { ItemList } from "aws-sdk/clients/dynamodb";
 
 class AggregateRoot {
-  public aggregateId: string;
+  public aggregateId: string | undefined;
   public version = 0;
   public events: EventDto[] = [];
   public snapshotIn = 0;
@@ -49,7 +50,7 @@ class AggregateRoot {
   public async retrieve(aggregateId: string): Promise<this> {
     this.aggregateId = aggregateId;
     this.events = [];
-    let events = [];
+    let events: ItemList | undefined = [];
 
     if (this.snapshotIn) {
       events = (
@@ -59,21 +60,26 @@ class AggregateRoot {
         })
       ).Items;
 
-      events = events.reverse();
+      events = events?.reverse();
     } else {
       events = (await EventStore.query(aggregateId)).Items;
     }
 
-    events.forEach((event) => {
-      this.version = event.version + 1;
-
-      this.apply(event);
+    events?.forEach((event) => {
+      this.version = Number(event.version) + 1;
+      this.apply({
+        aggregateId: String(event.aggregateId),
+        version: Number(event.version),
+        event: String(event.event),
+        payload: event.payload,
+      });
     });
 
     return this;
   }
 
   public apply(event: EventDto): void {
+    //@ts-ignore
     this[`apply${event.event}`](event.payload);
     this.events.push(event);
   }

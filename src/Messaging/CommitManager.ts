@@ -1,20 +1,21 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
+import { KafkaConsumer } from "node-rdkafka";
+
 const COMMIT_TIME_INTERVAL = 5000;
-
 class CommitManager {
-  public consumer: unknown;
-  public consumerConcurrency: string | number = 10;
-  public msgQueue: unknown = [];
-  public partitionsData: unknown = [];
-  public lastCommited: unknown = [];
+  consumer: KafkaConsumer | undefined;
+  consumerConcurrency: string | number = 10;
+  partitionsData: any = [];
+  lastCommited: any = [];
 
-  public start(consumer) {
+  public start(consumer: KafkaConsumer | undefined) {
     this.consumer = consumer;
     setInterval(() => {
       this.commitProcessedOffsets();
     }, COMMIT_TIME_INTERVAL);
   }
 
-  public notifyStartProcessing(data) {
+  public notifyStartProcessing(data: any) {
     const partition = data.partition;
     const offset = data.offset;
     const topic = data.topic;
@@ -26,16 +27,17 @@ class CommitManager {
     });
   }
 
-  public notifyFinishedProcessing(data) {
+  public notifyFinishedProcessing(data: any) {
     const partition = data.partition;
-
     const offset = data.offset;
 
     this.partitionsData[partition] = this.partitionsData[partition] || [];
 
-    const record = this.partitionsData[partition].filter((record) => {
-      return record.offset === offset;
-    })[0];
+    const record = this.partitionsData[partition].filter(
+      (record: { offset: any }) => {
+        return record.offset === offset;
+      }
+    )[0];
 
     if (record) {
       record.done = true;
@@ -46,14 +48,18 @@ class CommitManager {
     try {
       const offsetsToCommit = [];
       for (const key in this.partitionsData) {
-        const pi = this.partitionsData[key].findIndex((record) => {
-          return record.done;
-        });
+        const pi = this.partitionsData[key].findIndex(
+          (record: { done: any }) => {
+            return record.done;
+          }
+        );
 
         // last processed index
-        const npi = this.partitionsData[key].findIndex((record) => {
-          return !record.done;
-        });
+        const npi = this.partitionsData[key].findIndex(
+          (record: { done: any }) => {
+            return !record.done;
+          }
+        );
 
         // first unprocessed index
         const lastProcessedRecord =
@@ -79,7 +85,7 @@ class CommitManager {
       }
 
       if (offsetsToCommit.length > 0) {
-        this.consumer.commit(offsetsToCommit);
+        this.consumer?.commit(offsetsToCommit);
       }
 
       this.lastCommited =

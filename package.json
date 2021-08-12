@@ -5,27 +5,32 @@
   "main": "index.js",
   "scripts": {
     "test": "jest",
-    "lint": "eslint . --ext .ts",
-    "lint:fix": "eslint . --fix --ext .ts",
+    "check-types": "tsc --noemit",
+    "eslint": "eslint '*/**/*.{js,ts}' --quiet --fix",
+    "lint": "npm run eslint && npm run check-types",
     "build": "tsc"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "devDependencies": {
+    "@types/async": "^3.2.7",
     "@types/jest": "^26.0.24",
-    "@typescript-eslint/eslint-plugin": "^4.28.5",
+    "@typescript-eslint/eslint-plugin": "^4.29.0",
+    "@typescript-eslint/parser": "^4.29.0",
     "dotenv": "^10.0.0",
-    "eslint": "^7.30.0",
+    "eslint": "^7.32.0",
+    "eslint-config-prettier": "^8.3.0",
+    "eslint-plugin-prettier": "^3.4.0",
     "jest": "^27.0.6",
     "nanoid": "^3.1.23",
+    "prettier": "^2.3.2",
     "ts-jest": "^27.0.4",
     "typescript": "^4.3.5"
   },
   "dependencies": {
-    "async": "^3.2.0",
+    "async": "^3.2.1",
     "aws-sdk": "^2.951.0",
-    "dynamodb-toolbox": "^0.3.4",
     "node-rdkafka": "^2.10.1"
   }
 }

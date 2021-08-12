@@ -1,5 +1,5 @@
 interface Item {
-  productId: string;
+  productId: string | null;
   quantity: number;
 }
 

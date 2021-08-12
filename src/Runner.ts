@@ -1,41 +1,58 @@
+import { EventHandlersClassType } from "./Dto";
 import Consumer from "./Messaging/Consumer";
 
 class Runner {
-  projectors = [];
-  listeners = [];
-  consumer;
+  projectors: FunctionConstructor[] = [];
+  listeners: EventHandlersClassType[] = [];
+  consumers!: Consumer[];
 
-  async registerListeners(listeners) {
-    for (const listener of listeners) {
-      const ListenerClass = (await import(listener)).default;
+  registerListeners(listeners: string[]) {
+    const storeListeners = async () => {
+      for (const listener of listeners) {
+        const ListenerClass = (await import(listener)).default;
 
-      Object.getOwnPropertyNames(ListenerClass.prototype).forEach((value) => {
-        if (value.slice(0, 2) === "on") {
-          this.listeners.push(new ListenerClass().handle);
+        this.listeners.push(ListenerClass);
+      }
+    };
+    storeListeners();
+  }
+
+  registerProjectors(projectors: string[]) {
+    const storeProjectors = async () => {
+      for (const projector of projectors) {
+        const ProjectorClass = (await import(projector)).default;
+
+        this.projectors.push(ProjectorClass);
+      }
+    };
+    storeProjectors();
+  }
+
+  run() {
+    // Create consumers for listeners and for each projector
+    this.consumers = [
+      new Consumer(
+        this.listeners,
+        {
+          "metadata.broker.list": "localhost:9092",
+          "group.id": "group1",
+          "allow.auto.create.topics": true,
+          "enable.auto.commit": false,
+          log_level: 6,
+        },
+        {
+          "auto.offset.reset": "beginning", // "beginning", "latest"
         }
-      });
-    }
-  }
+      ),
+    ];
 
-  async registerProjectors(projectors) {
-    for (const projector of projectors) {
-      const ProjectorClass = (await import(projector)).default;
+    // this.projectors.forEach(
+    //   (projector) => new Consumer(this.projectors, this.listeners, {}, {})
+    // );
 
-      Object.getOwnPropertyNames(ProjectorClass.prototype).forEach((value) => {
-        if (value.slice(0, 2) === "on") {
-          this.projectors.push(new ProjectorClass()[value]);
-        }
-      });
-    }
-  }
-
-  async run() {
-    this.consumer = new Consumer(this.projectors, this.listeners, {}, {});
-    await this.consumer.start();
-  }
-
-  async disconnect() {
-    await this.consumer.disconnect();
+    this.consumers.forEach((consumer) => {
+      consumer.start();
+    });
   }
 }
 

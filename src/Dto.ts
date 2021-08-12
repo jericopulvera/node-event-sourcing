@@ -1,8 +1,16 @@
 interface EventDto {
+  topic?: string;
   aggregateId?: string;
   version?: number;
   event: string;
   payload: unknown;
 }
 
-export { EventDto };
+interface EventHandlersClassType {
+  new (): {
+    // handle?(arg0: EventDto): void;
+    [index: string]: void;
+  };
+}
+
+export { EventDto, EventHandlersClassType };

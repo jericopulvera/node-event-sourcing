@@ -7,6 +7,22 @@ dotenv.config();
 process.env.KAFKA_CONSUMER_MAX_PARALLEL_HANDLES = "77777";
 process.env.KAFKA_CONSUMER_MAX_QUEUE_SIZE = "77777";
 
-Runner.registerProjectors([path.resolve("./HotProductsProjector")]);
+const runConsumers = async () => {
+  await Runner.registerListeners([
+    path.resolve("./test/fixtures/Listeners/CartItemAddedListener"),
+  ]);
 
-Runner.run();
+  await Runner.registerProjectors([
+    path.resolve("./test/fixtures/Projectors/HotProductsProjector"),
+  ]);
+
+  await Runner.run();
+};
+
+runConsumers()
+  .then(() => {
+    console.log("running");
+  })
+  .catch((err) => {
+    console.error(err);
+  });

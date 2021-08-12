@@ -1,11 +1,11 @@
-import Runner from '../src/Runner'
+import Runner from "../src/Runner";
 
 describe("Projector", () => {
   beforeAll(() => {
-    Runner.run()
-  })
+    Runner.run();
+  });
 
   test("Can project", async () => {
-    expect(2 + 2).toBe(3);
+    expect(2 + 2).toBe(4);
   });
 });
