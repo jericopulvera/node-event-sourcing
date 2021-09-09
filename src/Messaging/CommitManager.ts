@@ -1,21 +1,21 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { KafkaConsumer } from "node-rdkafka";
 
-const COMMIT_TIME_INTERVAL = 5000;
+const COMMIT_TIME_INTERVAL = 3000;
 class CommitManager {
   consumer: KafkaConsumer | undefined;
   consumerConcurrency: string | number = 10;
   partitionsData: any = [];
   lastCommited: any = [];
 
-  public start(consumer: KafkaConsumer | undefined) {
+  public start(consumer: KafkaConsumer | undefined): void {
     this.consumer = consumer;
     setInterval(() => {
       this.commitProcessedOffsets();
     }, COMMIT_TIME_INTERVAL);
   }
 
-  public notifyStartProcessing(data: any) {
+  public notifyStartProcessing(data: any): void {
     const partition = data.partition;
     const offset = data.offset;
     const topic = data.topic;
@@ -27,7 +27,7 @@ class CommitManager {
     });
   }
 
-  public notifyFinishedProcessing(data: any) {
+  public notifyFinishedProcessing(data: any): void {
     const partition = data.partition;
     const offset = data.offset;
 
@@ -44,7 +44,7 @@ class CommitManager {
     }
   }
 
-  public async commitProcessedOffsets() {
+  public async commitProcessedOffsets(): Promise<void> {
     try {
       const offsetsToCommit = [];
       for (const key in this.partitionsData) {
@@ -96,13 +96,13 @@ class CommitManager {
     }
   }
 
-  public onRebalance() {
+  public onRebalance(): void {
     this.partitionsData = {};
   }
 
-  public getLastCommited() {
+  public getLastCommited(): void {
     return this.lastCommited;
   }
 }
 
-export default new CommitManager();
+export default CommitManager;

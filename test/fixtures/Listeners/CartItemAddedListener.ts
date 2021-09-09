@@ -2,7 +2,7 @@ import { EventDto } from "../../../src/Dto";
 
 class CartItemAddedListener {
   public async handle(eventData: EventDto): Promise<void> {
-    console.log({ eventData });
+    console.log("CartItemAddedListener");
   }
 }
 

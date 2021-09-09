@@ -3,10 +3,7 @@
 const { Kafka, logLevel } = require("kafkajs");
 const AWS = require("aws-sdk");
 
-const brokers = process.env.KAFKA_BROKERS?.split(",") || [
-  `b-1.demo-cluster-1.mbh1qh.c4.kafka.ap-southeast-2.amazonaws.com:9092`,
-  `b-2.demo-cluster-1.mbh1qh.c4.kafka.ap-southeast-2.amazonaws.com:9092`,
-];
+const brokers = process.env.KAFKA_BROKERS?.split(",") || [`172.31.10.238:9092`];
 
 const kafka = new Kafka({
   logLevel: logLevel.ERROR,

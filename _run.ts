@@ -16,13 +16,9 @@ const runConsumers = async () => {
     path.resolve("./test/fixtures/Projectors/HotProductsProjector"),
   ]);
 
-  await Runner.run();
+  Runner.run();
 };
 
-runConsumers()
-  .then(() => {
-    console.log("running");
-  })
-  .catch((err) => {
-    console.error(err);
-  });
+runConsumers().catch((err) => {
+  console.error(err);
+});

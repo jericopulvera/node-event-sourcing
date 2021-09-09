@@ -1,58 +1,86 @@
+import { ConsumerTopicConfig } from "node-rdkafka";
 import { EventHandlersClassType } from "./Dto";
 import Consumer from "./Messaging/Consumer";
 
 class Runner {
-  projectors: FunctionConstructor[] = [];
+  projectors: EventHandlersClassType[] = [];
   listeners: EventHandlersClassType[] = [];
   consumers!: Consumer[];
 
-  registerListeners(listeners: string[]) {
-    const storeListeners = async () => {
-      for (const listener of listeners) {
-        const ListenerClass = (await import(listener)).default;
+  async registerListeners(listeners: string[]) {
+    for (const listener of listeners) {
+      const ListenerClass = (await import(listener)).default;
 
-        this.listeners.push(ListenerClass);
-      }
-    };
-    storeListeners();
+      this.listeners.push(ListenerClass);
+    }
   }
 
-  registerProjectors(projectors: string[]) {
-    const storeProjectors = async () => {
-      for (const projector of projectors) {
-        const ProjectorClass = (await import(projector)).default;
-
-        this.projectors.push(ProjectorClass);
-      }
-    };
-    storeProjectors();
+  async registerProjectors(projectors: string[]) {
+    for (const projector of projectors) {
+      const ProjectorClass = (await import(projector)).default;
+      this.projectors.push(ProjectorClass);
+    }
   }
 
-  run() {
-    // Create consumers for listeners and for each projector
+  async run() {
+    const groupId = process.env.KAFKA_GROUP_ID || "example-group";
+    const offsetReset: ConsumerTopicConfig["auto.offset.reset"] = [
+      "smallest",
+      "earliest",
+      "beginning",
+      "largest",
+      "latest",
+      "end",
+      "error",
+    ].find(
+      (v) => v === process.env.KAFKA_OFFSET_RESET
+    ) as ConsumerTopicConfig["auto.offset.reset"];
+
     this.consumers = [
       new Consumer(
         this.listeners,
         {
           "metadata.broker.list": "localhost:9092",
-          "group.id": "group1",
+          "group.id": groupId,
           "allow.auto.create.topics": true,
           "enable.auto.commit": false,
           log_level: 6,
         },
         {
-          "auto.offset.reset": "beginning", // "beginning", "latest"
+          "auto.offset.reset": offsetReset || "beginning",
         }
       ),
     ];
 
-    // this.projectors.forEach(
-    //   (projector) => new Consumer(this.projectors, this.listeners, {}, {})
-    // );
-
-    this.consumers.forEach((consumer) => {
-      consumer.start();
+    this.projectors.forEach((projector) => {
+      this.consumers.push(
+        new Consumer(
+          [projector],
+          {
+            "metadata.broker.list": "localhost:9092",
+            "group.id": `${groupId}_${projector.name}`,
+            "allow.auto.create.topics": true,
+            "enable.auto.commit": false,
+            log_level: 6,
+          },
+          {
+            "auto.offset.reset": offsetReset || "beginning",
+          }
+        )
+      );
     });
+
+    await Promise.all(this.consumers.map((consumer) => consumer.start()));
+  }
+
+  async stop() {
+    try {
+      await Promise.all(
+        this.consumers.map((consumer) => consumer.disconnect())
+      );
+    } catch (error) {
+      console.error(error);
+    }
   }
 }
 

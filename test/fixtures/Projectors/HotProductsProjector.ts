@@ -3,6 +3,7 @@ class HotProductsProjector {
     productId: string;
     quantity: number;
   }): Promise<void> {
+    console.log("HotProductsProjector.cartItemAdded");
     if (!payload.productId) return;
   }
 
@@ -10,6 +11,7 @@ class HotProductsProjector {
     productId: string;
     quantity: number;
   }): Promise<void> {
+    console.log({ payload }, "Cart Item Removed");
     if (!payload.productId) return;
   }
 }

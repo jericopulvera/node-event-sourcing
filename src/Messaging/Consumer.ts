@@ -28,7 +28,9 @@ class Consumer {
   eventHandlers: EventHandlersClassType[] = [];
   maxParallelHandles: string | number = 10;
   maxQueueSize: string | number = 30;
-  paused = true;
+  paused = false;
+  consumerName = "";
+  commitManager!: CommitManager;
 
   constructor(
     eventHandlers: EventHandlersClassType[],
@@ -56,25 +58,17 @@ class Consumer {
     handler: (arg0: EventDto) => void
   ): Promise<void> {
     try {
-      CommitManager.notifyStartProcessing(data);
+      this.commitManager.notifyStartProcessing(data);
 
       if (data.value && isJson(data.value?.toString())) {
         const message = JSON.parse(data.value.toString());
+
         await handler(message);
       }
 
-      CommitManager.notifyFinishedProcessing(data);
+      this.commitManager.notifyFinishedProcessing(data);
     } catch (e) {
       console.error(`Error handling message: ${e}`);
-    }
-  }
-
-  public handleData(data: Kafka.Message): void {
-    this.msgQueue.push(data);
-
-    if (this.msgQueue.length() > this.maxQueueSize) {
-      this.consumer.pause(this.consumer.assignments());
-      this.paused = true;
     }
   }
 
@@ -93,7 +87,7 @@ class Consumer {
         return true;
       });
       this.consumer.unassign();
-      CommitManager.onRebalance();
+      this.commitManager.onRebalance();
     } else {
       console.error(`Rebalace error : ${err}`);
     }
@@ -113,7 +107,7 @@ class Consumer {
       }
     );
 
-    this.msgQueue = queue(async (data, done) => {
+    this.msgQueue = queue((data, done) => {
       let handler;
 
       this.eventHandlers.forEach((eventHandler) => {
@@ -127,13 +121,13 @@ class Consumer {
       });
 
       if (handler) {
-        await this.handleCB(data, handler);
+        this.handleCB(data, handler);
       }
 
       done();
     }, Number(this.maxParallelHandles));
 
-    this.msgQueue.drain(async () => {
+    this.msgQueue.drain(() => {
       if (this.paused) {
         this.consumer.resume(this.consumer.assignments());
         this.paused = false;
@@ -141,7 +135,8 @@ class Consumer {
     });
 
     this.consumer.on("ready", (arg) => {
-      console.log("consumer ready." + JSON.stringify(arg));
+      this.consumerName = JSON.stringify(arg);
+      console.log("consumer ready." + this.consumerName);
       const topics: string[] = [];
 
       this.eventHandlers.forEach((eventHandler) => {
@@ -161,10 +156,19 @@ class Consumer {
       this.consumer.subscribe(topics); // Subscribe to Listeners Event and Projector onSomething event
       this.consumer.consume();
 
-      CommitManager.start(this.consumer);
+      this.commitManager = new CommitManager();
+
+      this.commitManager.start(this.consumer);
     });
 
-    this.consumer.on("data", (data) => this.handleData(data));
+    this.consumer.on("data", (data) => {
+      this.msgQueue.push(data);
+
+      if (this.msgQueue.length() > this.maxQueueSize) {
+        this.consumer.pause(this.consumer.assignments());
+        this.paused = true;
+      }
+    });
 
     this.consumer.on("event.error", (err) => {
       console.error("Error from consumer");
