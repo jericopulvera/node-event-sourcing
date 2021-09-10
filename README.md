@@ -6,6 +6,7 @@
 
 - [x] Reliable event publisher
 - [x] Built for microservices
+- [ ] Dead letter queue support
 
 ## Current Limitations
 
@@ -21,7 +22,7 @@
 
 ### AggregateRoot
 
-> Class that handles the business logic and stream of events of a specific item such as a single Product and Order.
+Class that handles the business logic and stream of events of a specific item such as a single Product and Order.
 
 - Events are created via AggregateRoot.createEvent method
 - Events created are automatically published into Kafka topic via DynamoDB Stream (Production)
@@ -29,11 +30,11 @@
 
 ### Listener
 
-> Class that handles event after being fired
+Class that handles event after being fired
 
 ### Projector
 
-> Class that handles the update to read table after event is fired
+Class that handles the update to read table after event is fired
 
 ## Getting Started
 
@@ -83,10 +84,10 @@ export default HotProductsProjector;
 
 ```ts
 import { Runner } from "node-event-sourcing";
+import * as path from "path";
 
-Runner.registerListeners(["App/Domains/Cart/Listeners/CartListener"]);
-
-Runner.registerProjectors(["App/Domains/Cart/Projectors/CartProjector"]);
+Runner.registerListeners([path.resolve("./Listeners/CartListener")]);
+Runner.registerProjectors([path.resolve("./Projectors/HotProductsProjector")]);
 
 Runner.run()
   .then(() => {
@@ -96,3 +97,38 @@ Runner.run()
     console.log(error.message);
   });
 ```
+
+## Running the Event Publisher
+
+### Development
+
+#### poll-publisher.js
+
+```js
+const Publisher = require("node-event-sourcing/publisher");
+
+Publisher.run();
+```
+
+```bash
+node poll-publisher.js
+```
+
+### Production
+
+Upload the node-event-sourcing/lambda-event-publisher.zip in AWS Lambda and use that lambda function as a DynamoDB stream source. Make sure that the Lambda connects to Kafka server.
+
+## Handling failures
+
+Dead letter queue \
+Circuit breaker \
+Distributed circuit breaker
+
+## Handling transient failures
+
+Immediate retry \
+Exponential Backoff
+
+## What does the business say about the failure?
+
+If you can make it fail fast, do it instead of using exponential backoff or dead letter queues.
