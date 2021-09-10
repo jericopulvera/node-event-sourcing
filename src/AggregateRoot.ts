@@ -2,7 +2,7 @@ import EventStore from "./EventStore";
 import { EventDto } from "./Dto";
 import { ItemList } from "aws-sdk/clients/dynamodb";
 
-class AggregateRoot {
+export default class AggregateRoot {
   public aggregateId: string | undefined;
   public version = 0;
   public events: EventDto[] = [];
@@ -79,10 +79,8 @@ class AggregateRoot {
   }
 
   public apply(event: EventDto): void {
-    //@ts-ignore
+    // @ts-ignore
     this[`apply${event.event}`](event.payload);
     this.events.push(event);
   }
 }
-
-export default AggregateRoot;

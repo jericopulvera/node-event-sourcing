@@ -50,20 +50,77 @@ process.env.KAFKA_AUTO_CREATE_TOPICS = true; // default: true
 process.env.KAFKA_OFFSET_RESET = "beginning"; // default: beginning, options: beginning, latest
 ```
 
-### Creating Aggregate
+### Creating Event
+
+```ts
+interface Item {
+  productId: string | null;
+  quantity: number;
+}
+
+export default class CartItemAdded {
+  event = "CartItemAdded";
+
+  payload: Item = {
+    productId: null,
+    quantity: 0,
+  };
+
+  constructor(payload: Item) {
+    this.payload = payload;
+  }
+}
+```
+
+### Creating AggregateRoot
+
+```ts
+import { AggregateRoot } from "node-event-sourcing";
+import CartItemAdded from "./Events/CartItemAdded";
+
+interface Item {
+  productId: string;
+  quantity: number;
+}
+
+export default class CartAggregateRoot extends AggregateRoot {
+  public items: Item[] = [];
+  public snapshotIn = 0;
+
+  constructor() {
+    super();
+  }
+
+  public async addItemToCart(item: Item): Promise<void> {
+    await this.createEvent(new CartItemAdded(item));
+  }
+
+  public async applyCartItemAdded(item: Item): Promise<void> {
+    const existingItem = this.items.find((i) => i.productId === item.productId);
+
+    if (existingItem) {
+      existingItem.quantity = existingItem.quantity + item.quantity;
+    } else {
+      this.items.push(item);
+    }
+  }
+
+  public async applySnapshot(currentState: { items: Item[] }): Promise<void> {
+    this.items = currentState.items;
+  }
+}
+```
 
 ### Creating Event Listener
 
 ```ts
 import { Listener } from "node-event-sourcing";
 
-class CartItemAddedListener implements Listener {
+export default CartItemAddedListener implements Listener {
   public async handle() {
     // ...
   }
 }
-
-export default CartItemAddedListener;
 ```
 
 ### Creating Projections
@@ -71,13 +128,11 @@ export default CartItemAddedListener;
 ```ts
 import { Projector } from "node-event-sourcing";
 
-class HotProductsProjector implements Projector {
+export default class HotProductsProjector implements Projector {
   public async onCartItemAdded() {
     // ...
   }
 }
-
-export default HotProductsProjector;
 ```
 
 ### Running Event Listener

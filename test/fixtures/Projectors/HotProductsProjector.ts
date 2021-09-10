@@ -1,4 +1,4 @@
-class HotProductsProjector {
+export default class HotProductsProjector {
   public async onCartItemAdded(payload: {
     productId: string;
     quantity: number;
@@ -15,5 +15,3 @@ class HotProductsProjector {
     if (!payload.productId) return;
   }
 }
-
-export default HotProductsProjector;

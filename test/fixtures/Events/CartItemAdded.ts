@@ -3,7 +3,7 @@ interface Item {
   quantity: number;
 }
 
-class CartItemAdded {
+export default class CartItemAdded {
   event = "CartItemAdded";
 
   payload: Item = {
@@ -15,5 +15,3 @@ class CartItemAdded {
     this.payload = payload;
   }
 }
-
-export default CartItemAdded;
