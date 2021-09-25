@@ -160,7 +160,7 @@ Runner.run()
 #### poll-publisher.js
 
 ```js
-const Publisher = require("node-event-sourcing/publisher");
+const Publisher = require("node-event-sourcing/Publisher");
 
 Publisher.run();
 ```

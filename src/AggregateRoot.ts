@@ -29,7 +29,7 @@ export default class AggregateRoot {
         version: this.version + 1,
         event: "Snapshot",
         payload: payload,
-        active: 1,
+        published: 1,
       };
 
       this.apply(snapshotData);

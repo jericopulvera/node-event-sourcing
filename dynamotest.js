@@ -25,7 +25,7 @@ const run = async () => {
         AttributeDefinitions: [
           { AttributeName: "aggregateId", AttributeType: "S" },
           { AttributeName: "version", AttributeType: "N" },
-          { AttributeName: "active", AttributeType: "N" },
+          { AttributeName: "published", AttributeType: "N" },
           { AttributeName: "committedAt", AttributeType: "N" },
         ],
         ProvisionedThroughput: {
@@ -34,10 +34,10 @@ const run = async () => {
         },
         GlobalSecondaryIndexes: [
           {
-            IndexName: "ActiveCommittedAtIndex",
+            IndexName: "PublishedCommittedAtIndex",
             KeySchema: [
               {
-                AttributeName: "active",
+                AttributeName: "published",
                 KeyType: "HASH",
               },
               {
@@ -66,7 +66,7 @@ const run = async () => {
       .put({
         TableName: tableName,
         Item: {
-          active: 1,
+          published: 0,
           committedAt: Date.now(),
           aggregateId: Date.now().toString(),
           version: 0,

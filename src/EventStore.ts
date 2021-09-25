@@ -37,7 +37,7 @@ class EventStore {
         AttributeDefinitions: [
           { AttributeName: "aggregateId", AttributeType: "S" },
           { AttributeName: "version", AttributeType: "N" },
-          { AttributeName: "active", AttributeType: "N" },
+          { AttributeName: "published", AttributeType: "N" },
           { AttributeName: "committedAt", AttributeType: "S" },
         ],
         ProvisionedThroughput: {
@@ -46,10 +46,10 @@ class EventStore {
         },
         GlobalSecondaryIndexes: [
           {
-            IndexName: "ActiveCommittedAtIndex",
+            IndexName: "PublishedCommittedAtIndex",
             KeySchema: [
               {
-                AttributeName: "active",
+                AttributeName: "published",
                 KeyType: "HASH",
               },
               {
@@ -93,7 +93,7 @@ class EventStore {
         TableName: this.tableName,
         Item: {
           ...eventData,
-          active: 1,
+          published: process.env.POLLING_PUBLISHER ? 1 : 0,
           committedAt: Date.now(),
         },
       },
@@ -106,7 +106,7 @@ class EventStore {
         TableName: this.tableName,
         Item: {
           ...eventData,
-          active: 1,
+          published: 1,
           committedAt: Date.now(),
         },
       })
@@ -119,6 +119,39 @@ class EventStore {
         TransactItems: events,
       })
       .promise();
+  }
+
+  async getUnpublishedEvents() {
+    return await this.documentClient
+      .query({
+        TableName: this.tableName,
+        IndexName: "PublishedCommittedAtIndex",
+        KeyConditionExpression: "published = :published",
+        ExpressionAttributeValues: {
+          ":published": 0,
+        },
+        Limit: 10,
+      })
+      .promise();
+  }
+
+  async markEventsAsPublished(
+    events: DynamoDB.DocumentClient.ItemList | undefined
+  ) {
+    const params: DynamoDB.DocumentClient.BatchWriteItemInput = {
+      RequestItems: {},
+    };
+
+    params.RequestItems[this.tableName] = [];
+    events?.forEach((event) => {
+      params.RequestItems[this.tableName].push({
+        PutRequest: {
+          Item: { ...event, published: 1 },
+        },
+      });
+    });
+
+    await this.documentClient.batchWrite(params).promise();
   }
 }
 

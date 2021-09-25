@@ -1,16 +1,16 @@
 aws dynamodb create-table \
 --endpoint-url="http://localhost:8000" \
 --table-name EventStore \
---attribute-definitions AttributeName=aggregateId,AttributeType=S AttributeName=version,AttributeType=N AttributeName=active,AttributeType=N AttributeName=committedAt,AttributeType=N \
+--attribute-definitions AttributeName=aggregateId,AttributeType=S AttributeName=version,AttributeType=N AttributeName=published,AttributeType=N AttributeName=committedAt,AttributeType=N \
 --key-schema AttributeName=aggregateId,KeyType=HASH AttributeName=version,KeyType=RANGE \
 --provisioned-throughput ReadCapacityUnits=5,WriteCapacityUnits=5 \
 --stream-specification StreamEnabled=true,StreamViewType=NEW_IMAGE \
 --global-secondary-index '[
         {
-            "IndexName": "ActiveCommittedAtIndex",
+            "IndexName": "PublishedCommittedAtIndex",
             "KeySchema": [
                 {
-                    "AttributeName": "active",
+                    "AttributeName": "published",
                     "KeyType": "HASH"
                 },
                 {

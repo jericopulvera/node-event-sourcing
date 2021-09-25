@@ -40,7 +40,7 @@ class Runner {
       new Consumer(
         this.listeners,
         {
-          "metadata.broker.list": "localhost:9092",
+          "metadata.broker.list": process.env.KAFKA_BROKERS || `localhost:9092`,
           "group.id": groupId,
           "allow.auto.create.topics": true,
           "enable.auto.commit": false,
@@ -57,7 +57,8 @@ class Runner {
         new Consumer(
           [projector],
           {
-            "metadata.broker.list": "localhost:9092",
+            "metadata.broker.list":
+              process.env.KAFKA_BROKERS || `localhost:9092`,
             "group.id": `${groupId}_${projector.name}`,
             "allow.auto.create.topics": true,
             "enable.auto.commit": false,

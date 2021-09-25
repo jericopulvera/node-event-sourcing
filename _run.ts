@@ -1,8 +1,9 @@
-import Runner from "./src/Runner";
-import * as path from "path";
 import dotenv from "dotenv";
-
 dotenv.config();
+
+import Runner from "./src/Runner";
+import Publisher from "./src/Publisher";
+import * as path from "path";
 
 process.env.KAFKA_CONSUMER_MAX_PARALLEL_HANDLES = "77777";
 process.env.KAFKA_CONSUMER_MAX_QUEUE_SIZE = "77777";
@@ -17,6 +18,8 @@ const runConsumers = async () => {
   ]);
 
   Runner.run();
+
+  Publisher.run();
 };
 
 runConsumers().catch((err) => {
