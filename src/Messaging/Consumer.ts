@@ -31,6 +31,7 @@ class Consumer {
   paused = false;
   consumerName = "";
   commitManager!: CommitManager;
+  consumeInterval: ReturnType<typeof setInterval> | undefined;
 
   constructor(
     eventHandlers: EventHandlersClassType[],
@@ -134,6 +135,8 @@ class Consumer {
       }
     });
 
+    this.consumer.connect();
+
     this.consumer.on("ready", (arg) => {
       this.consumerName = JSON.stringify(arg);
       console.log("consumer ready." + this.consumerName);
@@ -153,8 +156,11 @@ class Consumer {
         }
       });
 
-      this.consumer.subscribe(topics); // Subscribe to Listeners Event and Projector onSomething event
-      this.consumer.consume();
+      this.consumer.subscribe(topics);
+
+      this.consumeInterval = setInterval(() => {
+        this.consumer.consume(2);
+      }, 1000);
 
       this.commitManager = new CommitManager();
 
@@ -174,8 +180,6 @@ class Consumer {
       console.error("Error from consumer");
       console.error(err);
     });
-
-    this.consumer.connect();
   }
 
   public async disconnect(): Promise<void> {

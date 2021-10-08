@@ -10,7 +10,6 @@ class Runner {
   async registerListeners(listeners: string[]) {
     for (const listener of listeners) {
       const ListenerClass = (await import(listener)).default;
-
       this.listeners.push(ListenerClass);
     }
   }

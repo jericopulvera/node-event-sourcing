@@ -1,8 +1,11 @@
 {
-  "name": "event-sourcing",
+  "name": "node-event-sourcing",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "files": [
+    "dist/*"
+  ],
   "scripts": {
     "test": "jest",
     "check-types": "tsc --noemit",

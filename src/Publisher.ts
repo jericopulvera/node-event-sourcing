@@ -16,11 +16,7 @@ class Publisher {
         return producer.produce(
           event.event,
           null,
-          Buffer.from(
-            JSON.stringify({
-              payload: Date.now().toString(),
-            })
-          ),
+          Buffer.from(JSON.stringify(event.payload)),
           null,
           Date.now(),
           (err) => {
@@ -40,16 +36,17 @@ class Publisher {
     producer.connect();
 
     const exec = async () => {
-      console.log("polling publisher");
-
       const events = (await EventStore.getUnpublishedEvents()).Items;
 
-      console.log(events);
+      console.log("Events ", events?.length);
+      try {
+        await this.publishEvents(events || []);
 
-      await this.publishEvents(events || []);
-
-      if (events?.length) {
-        await EventStore.markEventsAsPublished(events);
+        if (events?.length) {
+          await EventStore.markEventsAsPublished(events);
+        }
+      } catch (error) {
+        console.error(error, "something went wrong marking event as published");
       }
 
       setTimeout(async () => {

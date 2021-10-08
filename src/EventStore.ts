@@ -93,7 +93,7 @@ class EventStore {
         TableName: this.tableName,
         Item: {
           ...eventData,
-          published: process.env.POLLING_PUBLISHER ? 1 : 0,
+          published: process.env.DYNAMODB_STREAM_ENABLED ? 1 : 0,
           committedAt: Date.now(),
         },
       },
@@ -106,7 +106,7 @@ class EventStore {
         TableName: this.tableName,
         Item: {
           ...eventData,
-          published: 1,
+          published: process.env.DYNAMODB_STREAM_ENABLED ? 1 : 0,
           committedAt: Date.now(),
         },
       })
@@ -146,7 +146,10 @@ class EventStore {
     events?.forEach((event) => {
       params.RequestItems[this.tableName].push({
         PutRequest: {
-          Item: { ...event, published: 1 },
+          Item: {
+            ...event,
+            published: 1,
+          },
         },
       });
     });

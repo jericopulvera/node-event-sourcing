@@ -7,7 +7,7 @@ aws dynamodb create-table \
 --stream-specification StreamEnabled=true,StreamViewType=NEW_IMAGE \
 --global-secondary-index '[
         {
-            "IndexName": "PublishedCommittedAtIndex",
+            "IndexName": "ActiveCommittedAtIndex",
             "KeySchema": [
                 {
                     "AttributeName": "published",
