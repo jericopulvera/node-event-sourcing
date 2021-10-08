@@ -1,87 +1,74 @@
-import { ConsumerTopicConfig } from "node-rdkafka";
 import { EventHandlersClassType } from "./Dto";
-import Consumer from "./Messaging/Consumer";
+import ListenerConsumer from "./ListenerConsumer";
+import ProjectorConsumer from "./ProjectorConsumer";
+import { Kafka } from "kafkajs";
 
 class Runner {
   projectors: EventHandlersClassType[] = [];
   listeners: EventHandlersClassType[] = [];
-  consumers!: Consumer[];
+  listenersConsumers: ListenerConsumer[] = [];
+  projectorsConsumers: ProjectorConsumer[] = [];
+  kafka!: Kafka;
 
-  async registerListeners(listeners: string[]) {
+  constructor() {
+    const brokers = process.env.KAFKA_BROKERS?.split(",") || ["localhost:9092"];
+    const clientId = process.env.KAFKA_CLIENT_ID || "default-client-id";
+
+    let logLevel = 4;
+    if (process.env.KAFKA_LOG_LEVEL === "NOTHING") logLevel = 0;
+    if (process.env.KAFKA_LOG_LEVEL === "ERROR") logLevel = 1;
+    if (process.env.KAFKA_LOG_LEVEL === "WARN") logLevel = 2;
+    if (process.env.KAFKA_LOG_LEVEL === "DEBUG") logLevel = 5;
+
+    this.kafka = new Kafka({
+      logLevel,
+      brokers,
+      clientId,
+    });
+  }
+
+  async registerListeners(listeners: string[]): Promise<void> {
     for (const listener of listeners) {
       const ListenerClass = (await import(listener)).default;
       this.listeners.push(ListenerClass);
     }
   }
 
-  async registerProjectors(projectors: string[]) {
+  async registerProjectors(projectors: string[]): Promise<void> {
     for (const projector of projectors) {
       const ProjectorClass = (await import(projector)).default;
+
       this.projectors.push(ProjectorClass);
     }
   }
 
-  async run() {
-    const groupId = process.env.KAFKA_GROUP_ID || "example-group";
-    const offsetReset: ConsumerTopicConfig["auto.offset.reset"] = [
-      "smallest",
-      "earliest",
-      "beginning",
-      "largest",
-      "latest",
-      "end",
-      "error",
-    ].find(
-      (v) => v === process.env.KAFKA_OFFSET_RESET
-    ) as ConsumerTopicConfig["auto.offset.reset"];
+  async run(): Promise<void> {
+    const groupId = process.env.KAFKA_GROUP_ID || "default-group";
 
-    this.consumers = [
-      new Consumer(
-        this.listeners,
-        {
-          "metadata.broker.list": process.env.KAFKA_BROKERS || `localhost:9092`,
-          "group.id": groupId,
-          "allow.auto.create.topics": true,
-          "enable.auto.commit": false,
-          log_level: 6,
-        },
-        {
-          "auto.offset.reset": offsetReset || "beginning",
-        }
-      ),
-    ];
-
-    this.projectors.forEach((projector) => {
-      this.consumers.push(
-        new Consumer(
-          [projector],
-          {
-            "metadata.broker.list":
-              process.env.KAFKA_BROKERS || `localhost:9092`,
-            "group.id": `${groupId}_${projector.name}`,
-            "allow.auto.create.topics": true,
-            "enable.auto.commit": false,
-            log_level: 6,
-          },
-          {
-            "auto.offset.reset": offsetReset || "beginning",
-          }
-        )
+    for (const projector of this.projectors) {
+      this.projectorsConsumers.push(
+        new ProjectorConsumer(this.kafka, groupId, projector)
       );
-    });
+    }
 
-    await Promise.all(this.consumers.map((consumer) => consumer.start()));
+    for (const consumer of this.projectorsConsumers) {
+      await consumer.start();
+    }
+
+    // for (const consumer of this.listenersConsumers) {
+    //   await consumer.start();
+    // }
   }
 
-  async stop() {
-    try {
-      await Promise.all(
-        this.consumers.map((consumer) => consumer.disconnect())
-      );
-    } catch (error) {
-      console.error(error);
+  stop(): void {
+    // for (const consumer of this.listenersConsumers) {
+    //   consumer.disconnect();
+    // }
+
+    for (const consumer of this.projectorsConsumers) {
+      consumer.disconnect();
     }
   }
 }
 
-export default new Runner();
+export default Runner;

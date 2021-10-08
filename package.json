@@ -35,6 +35,7 @@
   "dependencies": {
     "async": "^3.2.1",
     "aws-sdk": "^2.951.0",
+    "kafkajs": "^1.15.0",
     "node-rdkafka": "^2.10.1"
   },
   "directories": {

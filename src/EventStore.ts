@@ -6,11 +6,10 @@ class EventStore {
   service: DynamoDB;
 
   constructor() {
-    this.tableName = process.env.EVENTSTORE_NAME || "EventStore";
+    this.tableName = process.env.EVENTSTORE_TABLE_NAME || "EventStore";
 
     if (String(process.env.DYNAMODB_LOCAL) === "true") {
       this.service = new DynamoDB({
-        region: process.env.AWS_REGION,
         endpoint: process.env.DYNAMODB_URL || "http://localhost:8000",
       });
     } else {
@@ -94,7 +93,7 @@ class EventStore {
         Item: {
           ...eventData,
           published: process.env.DYNAMODB_STREAM_ENABLED ? 1 : 0,
-          committedAt: Date.now(),
+          committedAt: String(Date.now()),
         },
       },
     };
@@ -107,7 +106,7 @@ class EventStore {
         Item: {
           ...eventData,
           published: process.env.DYNAMODB_STREAM_ENABLED ? 1 : 0,
-          committedAt: Date.now(),
+          committedAt: String(Date.now()),
         },
       })
       .promise();

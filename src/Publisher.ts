@@ -1,39 +1,30 @@
 import EventStore from "./EventStore";
 import AWS from "aws-sdk";
-import Kafka from "node-rdkafka";
+import { Kafka } from "kafkajs";
 
-const producer = new Kafka.HighLevelProducer({
-  "metadata.broker.list": process.env.KAFKA_BROKERS || `localhost:9092`,
-  "queue.buffering.max.messages": 10000000,
+const brokers = process.env.KAFKA_BROKERS?.split(",") || ["localhost:9092"];
+
+const kafka = new Kafka({
+  clientId: "my-app",
+  brokers,
 });
+
+const producer = kafka.producer();
 
 class Publisher {
   async publishEvents(
     events: AWS.DynamoDB.DocumentClient.ItemList
   ): Promise<void> {
     for (const event of events) {
-      await new Promise<void>((resolve, reject) => {
-        return producer.produce(
-          event.event,
-          null,
-          Buffer.from(JSON.stringify(event.payload)),
-          null,
-          Date.now(),
-          (err) => {
-            if (err) {
-              console.log({ err });
-              reject(err);
-              return;
-            }
-            resolve();
-          }
-        );
+      await producer.send({
+        topic: event.event,
+        messages: [{ value: JSON.stringify(event) }],
       });
     }
   }
 
   async run(): Promise<void> {
-    producer.connect();
+    await producer.connect();
 
     const exec = async () => {
       const events = (await EventStore.getUnpublishedEvents()).Items;
