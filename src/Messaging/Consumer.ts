@@ -159,8 +159,8 @@ class Consumer {
       this.consumer.subscribe(topics);
 
       this.consumeInterval = setInterval(() => {
-        this.consumer.consume(2);
-      }, 1000);
+        this.consumer.consume(10);
+      }, 10000);
 
       this.commitManager = new CommitManager();
 

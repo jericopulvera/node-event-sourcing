@@ -1,7 +1,7 @@
 {
-  "name": "node-event-sourcing",
-  "version": "1.0.0",
-  "description": "",
+  "name": "@halcyon-agile/node-event-sourcing",
+  "version": "1.0.1",
+  "description": "> Opinionated OOP based node.js event sourcing library inspired by laravel-event-sourcing",
   "main": "dist/index.js",
   "files": [
     "dist/*"
@@ -14,7 +14,7 @@
     "build": "tsc"
   },
   "keywords": [],
-  "author": "",
+  "author": "Jerico A. Pulvera",
   "license": "ISC",
   "devDependencies": {
     "@types/async": "^3.2.7",
@@ -36,5 +36,17 @@
     "async": "^3.2.1",
     "aws-sdk": "^2.951.0",
     "node-rdkafka": "^2.10.1"
-  }
+  },
+  "directories": {
+    "example": "examples",
+    "test": "test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jericopulvera/node-event-sourcing.git"
+  },
+  "bugs": {
+    "url": "https://github.com/jericopulvera/node-event-sourcing/issues"
+  },
+  "homepage": "https://github.com/jericopulvera/node-event-sourcing#readme"
 }
