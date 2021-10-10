@@ -1,5 +1,5 @@
 import { Kafka, Consumer as KafkaConsumer } from "kafkajs";
-import { EventDto, EventHandlersClassType } from "./Dto";
+import { EventHandlersClassType } from "./Dto";
 import { tryParseJSONObject } from "./Helper";
 
 class ProjectorConsumer {
@@ -20,9 +20,8 @@ class ProjectorConsumer {
   }
 
   public start(): void {
-    console.log(`${this.groupId}_${this.projector.name}`);
-
     const topics: string[] = [];
+
     Object.getOwnPropertyNames(this.projector.prototype).forEach((value) => {
       if (value.slice(0, 2) === "on") {
         topics.push(value.slice(2));
@@ -47,11 +46,20 @@ class ProjectorConsumer {
         eachMessage: async ({ topic, partition, message }) => {
           const event = tryParseJSONObject(message.value?.toString());
 
-          const handler = projector[`on${topic}`];
+          if (typeof event === "object") {
+            const handler = projector[`on${topic}`];
 
-          if (typeof handler === "function") {
-            // @ts-ignore
-            await handler(event);
+            if (
+              typeof handler === "function" &&
+              typeof event.aggregateId === "string" &&
+              typeof event.version === "number" &&
+              typeof event.event === "string" &&
+              typeof event.committedAt === "string" &&
+              typeof event.published === "number"
+            ) {
+              // @ts-ignore
+              await handler(event);
+            }
           }
 
           this.kafkaConsumer.commitOffsets([
@@ -70,6 +78,7 @@ class ProjectorConsumer {
 
   public disconnect(): void {
     console.log(`Disconnecting: ${this.projector.name}`);
+
     this.kafkaConsumer.disconnect();
   }
 }

@@ -31,10 +31,11 @@ class Publisher {
 
       console.log("Events ", events?.length);
       try {
-        await this.publishEvents(events || []);
-
         if (events?.length) {
-          await EventStore.markEventsAsPublished(events);
+          await Promise.all([
+            EventStore.markEventsAsPublished(events),
+            this.publishEvents(events || []),
+          ]);
         }
       } catch (error) {
         console.error(error, "something went wrong marking event as published");

@@ -7,9 +7,17 @@ interface EventDto {
 
 interface EventHandlersClassType {
   new (): {
-    // handle?(arg0: EventDto): void;
-    [index: string]: void;
+    [index: string]: string | void;
   };
 }
 
-export { EventDto, EventHandlersClassType };
+interface ListenerHandlerClassType {
+  event?: string;
+  __invoke(arg0: EventDto): void;
+  new (): {
+    event?: string;
+    __invoke(arg0: EventDto): void;
+  };
+}
+
+export { EventDto, EventHandlersClassType, ListenerHandlerClassType };

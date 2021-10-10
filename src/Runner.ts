@@ -1,14 +1,14 @@
-import { EventHandlersClassType } from "./Dto";
+import { EventHandlersClassType, ListenerHandlerClassType } from "./Dto";
 import ListenerConsumer from "./ListenerConsumer";
 import ProjectorConsumer from "./ProjectorConsumer";
 import { Kafka } from "kafkajs";
 
 class Runner {
-  projectors: EventHandlersClassType[] = [];
-  listeners: EventHandlersClassType[] = [];
-  listenersConsumers: ListenerConsumer[] = [];
-  projectorsConsumers: ProjectorConsumer[] = [];
   kafka!: Kafka;
+  listenerConsumer: ListenerConsumer | undefined;
+  listeners: ListenerHandlerClassType[] = [];
+  projectors: EventHandlersClassType[] = [];
+  projectorsConsumers: ProjectorConsumer[] = [];
 
   constructor() {
     const brokers = process.env.KAFKA_BROKERS?.split(",") || ["localhost:9092"];
@@ -30,7 +30,7 @@ class Runner {
   async registerListeners(listeners: string[]): Promise<void> {
     for (const listener of listeners) {
       const ListenerClass = (await import(listener)).default;
-      this.listeners.push(ListenerClass);
+      this.listeners.push(new ListenerClass());
     }
   }
 
@@ -45,6 +45,16 @@ class Runner {
   async run(): Promise<void> {
     const groupId = process.env.KAFKA_GROUP_ID || "default-group";
 
+    if (this.listeners.length) {
+      this.listenerConsumer = new ListenerConsumer(
+        this.kafka,
+        groupId,
+        this.listeners
+      );
+
+      this.listenerConsumer.start();
+    }
+
     for (const projector of this.projectors) {
       this.projectorsConsumers.push(
         new ProjectorConsumer(this.kafka, groupId, projector)
@@ -54,16 +64,12 @@ class Runner {
     for (const consumer of this.projectorsConsumers) {
       await consumer.start();
     }
-
-    // for (const consumer of this.listenersConsumers) {
-    //   await consumer.start();
-    // }
   }
 
   stop(): void {
-    // for (const consumer of this.listenersConsumers) {
-    //   consumer.disconnect();
-    // }
+    if (this.listenerConsumer) {
+      this.listenerConsumer.disconnect();
+    }
 
     for (const consumer of this.projectorsConsumers) {
       consumer.disconnect();

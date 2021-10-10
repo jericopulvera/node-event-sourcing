@@ -14,9 +14,16 @@ export function isJson(item: string | null): boolean {
   return false;
 }
 
-export function tryParseJSONObject(
-  jsonString: string | undefined
-): Record<string, unknown> | boolean {
+export function tryParseJSONObject(jsonString: string | undefined):
+  | {
+      aggregateId: string;
+      version: string;
+      event: string;
+      published: number;
+      committedAt: string;
+      payload: never;
+    }
+  | boolean {
   try {
     // @ts-ignore
     const o = JSON.parse(jsonString);

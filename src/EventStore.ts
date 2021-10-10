@@ -94,6 +94,7 @@ class EventStore {
           ...eventData,
           published: process.env.DYNAMODB_STREAM_ENABLED ? 1 : 0,
           committedAt: String(Date.now()),
+          rkey: Math.floor(Math.random() * 1000) + 1,
         },
       },
     };
@@ -107,6 +108,7 @@ class EventStore {
           ...eventData,
           published: process.env.DYNAMODB_STREAM_ENABLED ? 1 : 0,
           committedAt: String(Date.now()),
+          rkey: Math.floor(Math.random() * 1000) + 1,
         },
       })
       .promise();
