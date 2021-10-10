@@ -1,6 +1,6 @@
 {
   "name": "@halcyon-agile/node-event-sourcing",
-  "version": "1.0.2",
+  "version": "1.0.5",
   "description": "> Opinionated OOP based node.js event sourcing library inspired by laravel-event-sourcing",
   "main": "dist/index.js",
   "files": [
@@ -35,8 +35,7 @@
   "dependencies": {
     "async": "^3.2.1",
     "aws-sdk": "^2.951.0",
-    "kafkajs": "^1.15.0",
-    "node-rdkafka": "^2.10.1"
+    "kafkajs": "^1.15.0"
   },
   "directories": {
     "example": "examples",

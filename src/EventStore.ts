@@ -37,7 +37,7 @@ class EventStore {
           { AttributeName: "aggregateId", AttributeType: "S" },
           { AttributeName: "version", AttributeType: "N" },
           { AttributeName: "published", AttributeType: "N" },
-          { AttributeName: "committedAt", AttributeType: "S" },
+          { AttributeName: "committedAt", AttributeType: "N" },
         ],
         ProvisionedThroughput: {
           ReadCapacityUnits: 10,
@@ -93,7 +93,7 @@ class EventStore {
         Item: {
           ...eventData,
           published: process.env.DYNAMODB_STREAM_ENABLED ? 1 : 0,
-          committedAt: String(Date.now()),
+          committedAt: Number(Date.now()),
           rkey: Math.floor(Math.random() * 1000) + 1,
         },
       },
@@ -107,7 +107,7 @@ class EventStore {
         Item: {
           ...eventData,
           published: process.env.DYNAMODB_STREAM_ENABLED ? 1 : 0,
-          committedAt: String(Date.now()),
+          committedAt: Number(Date.now()),
           rkey: Math.floor(Math.random() * 1000) + 1,
         },
       })
