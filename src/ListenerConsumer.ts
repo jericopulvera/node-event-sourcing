@@ -1,5 +1,6 @@
 import { Kafka, Consumer as KafkaConsumer } from "kafkajs";
 import { ListenerHandlerClassType } from "./Dto";
+import EventStore from "./EventStore";
 import { tryParseJSONObject } from "./Helper";
 
 class ListenerConsumer {
@@ -70,8 +71,17 @@ class ListenerConsumer {
               typeof event.committedAt === "number" &&
               typeof event.published === "number"
             ) {
-              // @ts-ignore
-              await handler(event);
+              try {
+                // @ts-ignore
+                await handler(event);
+              } catch (error) {
+                await EventStore.createEvent({
+                  aggregateId: "ERROR",
+                  version: Number(Date.now()),
+                  event: "SystemUnhandledException",
+                  payload: JSON.stringify(error),
+                });
+              }
             }
           }
 

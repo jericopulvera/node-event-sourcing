@@ -1,6 +1,7 @@
 import { Kafka, Consumer as KafkaConsumer } from "kafkajs";
 import { EventHandlersClassType } from "./Dto";
 import { tryParseJSONObject } from "./Helper";
+import EventStore from "./EventStore";
 
 class ProjectorConsumer {
   kafka!: Kafka;
@@ -63,8 +64,17 @@ class ProjectorConsumer {
               typeof event.committedAt === "number" &&
               typeof event.published === "number"
             ) {
-              // @ts-ignore
-              await handler(event);
+              try {
+                // @ts-ignore
+                await handler(event);
+              } catch (error) {
+                await EventStore.createEvent({
+                  aggregateId: "ERROR",
+                  version: Number(Date.now()),
+                  event: "SystemUnhandledException",
+                  payload: JSON.stringify(error),
+                });
+              }
             }
           }
 
