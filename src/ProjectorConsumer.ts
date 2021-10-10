@@ -46,6 +46,12 @@ class ProjectorConsumer {
         eachMessage: async ({ topic, partition, message }) => {
           const event = tryParseJSONObject(message.value?.toString());
 
+          if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "INFO") {
+            console.info(
+              `Projector ${this.groupId}_${this.projector.name} consuming ${topic} in partition ${partition}`
+            );
+          }
+
           if (typeof event === "object") {
             const handler = projector[`on${topic}`];
 
@@ -77,7 +83,9 @@ class ProjectorConsumer {
   }
 
   public disconnect(): void {
-    console.log(`Disconnecting: ${this.projector.name}`);
+    if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "INFO") {
+      console.log(`Disconnecting: ${this.projector.name}`);
+    }
 
     this.kafkaConsumer.disconnect();
   }

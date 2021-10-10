@@ -15,10 +15,10 @@ class Runner {
     const clientId = process.env.KAFKA_CLIENT_ID || "default-client-id";
 
     let logLevel = 4;
-    if (process.env.KAFKA_LOG_LEVEL === "NOTHING") logLevel = 0;
-    if (process.env.KAFKA_LOG_LEVEL === "ERROR") logLevel = 1;
-    if (process.env.KAFKA_LOG_LEVEL === "WARN") logLevel = 2;
-    if (process.env.KAFKA_LOG_LEVEL === "DEBUG") logLevel = 5;
+    if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "NOTHING") logLevel = 0;
+    if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "ERROR") logLevel = 1;
+    if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "WARN") logLevel = 2;
+    if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "DEBUG") logLevel = 5;
 
     this.kafka = new Kafka({
       logLevel,

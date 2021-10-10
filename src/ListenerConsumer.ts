@@ -45,6 +45,12 @@ class ListenerConsumer {
         eachMessage: async ({ topic, partition, message }) => {
           const event = tryParseJSONObject(message.value?.toString());
 
+          if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "INFO") {
+            console.info(
+              `Listener ${this.groupId} consuming ${topic} in partition ${partition}`
+            );
+          }
+
           if (typeof event === "object") {
             const listener = this.listeners.find(
               (listener) =>
@@ -84,7 +90,9 @@ class ListenerConsumer {
   }
 
   public disconnect(): void {
-    console.log(`Disconnecting: ${this.groupId}`);
+    if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "INFO") {
+      console.log(`Disconnecting: ${this.groupId}`);
+    }
 
     this.kafkaConsumer.disconnect();
   }

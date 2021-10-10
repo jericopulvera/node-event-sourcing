@@ -17,7 +17,11 @@ export default class AggregateRoot {
       version: this.version,
     };
 
-    if (this.snapshotIn && this.events.length % this.snapshotIn === 0) {
+    if (
+      this.snapshotIn &&
+      this.events.length &&
+      this.events[0].version % this.snapshotIn === 0
+    ) {
       const payload = JSON.parse(JSON.stringify(this));
       delete payload.events;
       delete payload.aggregateId;

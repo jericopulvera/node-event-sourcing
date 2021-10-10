@@ -29,7 +29,10 @@ class Publisher {
     const exec = async () => {
       const events = (await EventStore.getUnpublishedEvents()).Items;
 
-      console.log("Events ", events?.length);
+      if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "INFO") {
+        console.debug(`Publishing ${events?.length} Events`);
+      }
+
       try {
         if (events?.length) {
           await Promise.all([
@@ -37,8 +40,14 @@ class Publisher {
             this.publishEvents(events || []),
           ]);
         }
+
+        if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "INFO") {
+          console.info(`Published ${events?.length} events`);
+        }
       } catch (error) {
-        console.error(error, "something went wrong marking event as published");
+        if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "ERROR") {
+          console.error(error, "something went wrong publishing event");
+        }
       }
 
       setTimeout(async () => {
