@@ -54,7 +54,7 @@ class ProjectorConsumer {
               typeof event.aggregateId === "string" &&
               typeof event.version === "number" &&
               typeof event.event === "string" &&
-              typeof event.committedAt === "string" &&
+              typeof event.committedAt === "number" &&
               typeof event.published === "number"
             ) {
               // @ts-ignore
