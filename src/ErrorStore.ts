@@ -1,12 +1,13 @@
 import DynamoDB from "aws-sdk/clients/dynamodb";
-import { EventDto } from "./Dto";
-class ERRORSTORE_NAME {
+
+class ErrorStore {
   tableName = "ErrorStore";
   documentClient: DynamoDB.DocumentClient;
   service: DynamoDB;
 
   constructor() {
-    this.tableName = process.env.EVENTSTORE_TABLE_NAME || "ERRORSTORE_NAME";
+    this.tableName = process.env.ERRORSTORE_TABLE_NAME || "ERRORSTORE_NAME";
+    this.tableName = `${process.env.DYNAMODB_PREFIX}_${this.tableName}`;
 
     if (String(process.env.DYNAMODB_LOCAL) === "true") {
       this.service = new DynamoDB({
@@ -53,4 +54,4 @@ class ERRORSTORE_NAME {
   }
 }
 
-export default new ERRORSTORE_NAME();
+export default new ErrorStore();

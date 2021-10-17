@@ -1,3 +1,4 @@
+/* eslint-disable no-empty */
 import { EventHandlersClassType, ListenerHandlerClassType } from "./Dto";
 import ListenerConsumer from "./ListenerConsumer";
 import ProjectorConsumer from "./ProjectorConsumer";
@@ -48,9 +49,11 @@ class Runner {
     const groupId = process.env.KAFKA_GROUP_ID || "default-group";
 
     try {
-      await ErrorStore.createTable();
       await EventStore.createTable();
-      // eslint-disable-next-line no-empty
+    } catch (_) {}
+
+    try {
+      await ErrorStore.createTable();
     } catch (_) {}
 
     if (this.listeners.length) {
