@@ -1,6 +1,8 @@
 import { EventHandlersClassType, ListenerHandlerClassType } from "./Dto";
 import ListenerConsumer from "./ListenerConsumer";
 import ProjectorConsumer from "./ProjectorConsumer";
+import EventStore from "./EventStore";
+import ErrorStore from "./ErrorStore";
 import { Kafka } from "kafkajs";
 
 class Runner {
@@ -44,6 +46,12 @@ class Runner {
 
   async run(): Promise<void> {
     const groupId = process.env.KAFKA_GROUP_ID || "default-group";
+
+    try {
+      await ErrorStore.createTable();
+      await EventStore.createTable();
+      // eslint-disable-next-line no-empty
+    } catch (_) {}
 
     if (this.listeners.length) {
       this.listenerConsumer = new ListenerConsumer(
