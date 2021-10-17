@@ -15,10 +15,13 @@ class Publisher {
   async publishEvents(
     events: AWS.DynamoDB.DocumentClient.ItemList
   ): Promise<void> {
+    const eventsTopic = process.env.KAFKA_EVENTS_TOPIC || "GlobalEvents";
+
     for (const event of events) {
+      if (typeof event.aggregateId !== "string") return;
       await producer.send({
-        topic: event.event,
-        messages: [{ value: JSON.stringify(event) }],
+        topic: eventsTopic,
+        messages: [{ key: event.aggregateId, value: JSON.stringify(event) }],
       });
     }
   }
@@ -52,7 +55,7 @@ class Publisher {
 
       setTimeout(async () => {
         await exec();
-      }, 2000);
+      }, 500);
     };
 
     await exec();

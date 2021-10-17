@@ -1,7 +1,8 @@
 import { Kafka, Consumer as KafkaConsumer } from "kafkajs";
 import { ListenerHandlerClassType } from "./Dto";
-import EventStore from "./EventStore";
 import { tryParseJSONObject } from "./Helper";
+import ErrorStore from "./ErrorStore";
+const eventsTopic = process.env.KAFKA_EVENTS_TOPIC || "GlobalEvents";
 
 class ListenerConsumer {
   kafka!: Kafka;
@@ -20,30 +21,22 @@ class ListenerConsumer {
   }
 
   public start(): void {
-    const topics: string[] = [];
-
     this.kafkaConsumer = this.kafka.consumer({
       groupId: `${this.groupId}`,
     });
 
-    for (const listener of this.listeners) {
-      if (listener?.event) {
-        topics.push(listener.event);
-      } else {
-        topics.push(listener.constructor.name.slice(0, -8));
-      }
-    }
-
     const run = async () => {
       await this.kafkaConsumer.connect();
 
-      for (const topic of topics) {
-        await this.kafkaConsumer.subscribe({ topic, fromBeginning: true });
-      }
+      await this.kafkaConsumer.subscribe({
+        topic: eventsTopic,
+        fromBeginning: true,
+      });
 
       await this.kafkaConsumer.run({
         autoCommit: false,
         eachMessage: async ({ topic, partition, message }) => {
+          if (topic !== eventsTopic) return;
           const event = tryParseJSONObject(message.value?.toString());
 
           if (process.env.KAFKA_LOG_LEVEL?.toUpperCase() === "INFO") {
@@ -75,11 +68,19 @@ class ListenerConsumer {
                 // @ts-ignore
                 await handler(event);
               } catch (error) {
-                await EventStore.createEvent({
-                  aggregateId: "ERROR",
-                  version: Number(Date.now()),
-                  event: "SystemUnhandledException",
-                  payload: JSON.stringify(error),
+                let errorMessage = "Failed to do something exceptional";
+
+                if (error instanceof Error) {
+                  errorMessage = error.message;
+                }
+
+                await ErrorStore.create({
+                  event: `topic#${this.groupId}`,
+                  date: new Date().toISOString(),
+                  payload: {
+                    message: errorMessage,
+                    text: JSON.stringify(error),
+                  },
                 });
               }
             }
