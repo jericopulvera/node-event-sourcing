@@ -7,7 +7,7 @@ class ErrorStore {
 
   constructor() {
     this.tableName = process.env.ERRORSTORE_TABLE_NAME || "ERRORSTORE_NAME";
-    this.tableName = `${process.env.DYNAMODB_PREFIX}_${this.tableName}`;
+    this.tableName = `${process.env.DYNAMODB_PREFIX || ""}${this.tableName}`;
 
     if (String(process.env.DYNAMODB_LOCAL) === "true") {
       this.service = new DynamoDB({

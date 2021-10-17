@@ -7,7 +7,7 @@ class EventStore {
 
   constructor() {
     this.tableName = process.env.EVENTSTORE_TABLE_NAME || "EventStore";
-    this.tableName = `${process.env.DYNAMODB_PREFIX}_${this.tableName}`;
+    this.tableName = `${process.env.DYNAMODB_PREFIX || ""}${this.tableName}`;
 
     if (String(process.env.DYNAMODB_LOCAL) === "true") {
       this.service = new DynamoDB({
