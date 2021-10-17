@@ -49,7 +49,7 @@ class ProjectorConsumer {
           }
 
           if (typeof event === "object") {
-            const handler = projector[`on${topic}`];
+            const handler = projector[`on${event.event}`];
 
             if (
               typeof handler === "function" &&

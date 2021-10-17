@@ -48,8 +48,8 @@ class ListenerConsumer {
           if (typeof event === "object") {
             const listener = this.listeners.find(
               (listener) =>
-                listener.event === topic ||
-                listener.constructor.name.slice(0, -8) === topic
+                listener.event === event.event ||
+                listener.constructor.name.slice(0, -8) === event.event
             );
 
             let handler;

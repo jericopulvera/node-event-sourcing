@@ -3,6 +3,7 @@ import AWS from "aws-sdk";
 import { Kafka } from "kafkajs";
 
 const brokers = process.env.KAFKA_BROKERS?.split(",") || ["localhost:9092"];
+const eventsTopic = process.env.KAFKA_EVENTS_TOPIC || "GlobalEvents";
 
 const kafka = new Kafka({
   clientId: "my-app",
@@ -15,8 +16,6 @@ class Publisher {
   async publishEvents(
     events: AWS.DynamoDB.DocumentClient.ItemList
   ): Promise<void> {
-    const eventsTopic = process.env.KAFKA_EVENTS_TOPIC || "GlobalEvents";
-
     for (const event of events) {
       if (typeof event.aggregateId !== "string") return;
       await producer.send({

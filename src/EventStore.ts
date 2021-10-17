@@ -7,7 +7,7 @@ class EventStore {
 
   constructor() {
     this.tableName = process.env.EVENTSTORE_TABLE_NAME || "EventStore";
-    this.tableName = `${process.env.DYNAMODB_PREFIX || ""}${this.tableName}`;
+    this.tableName = `${process.env.DYNAMODB_PREFIX || "v1"}${this.tableName}`;
 
     if (String(process.env.DYNAMODB_LOCAL) === "true") {
       this.service = new DynamoDB({
@@ -40,10 +40,7 @@ class EventStore {
           { AttributeName: "published", AttributeType: "N" },
           { AttributeName: "committedAt", AttributeType: "N" },
         ],
-        ProvisionedThroughput: {
-          ReadCapacityUnits: 10,
-          WriteCapacityUnits: 10,
-        },
+        BillingMode: "PAY_PER_REQUEST",
         GlobalSecondaryIndexes: [
           {
             IndexName: "PublishedCommittedAtIndex",
