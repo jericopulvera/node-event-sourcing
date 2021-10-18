@@ -21,13 +21,11 @@ exports.handler = async (event, _) => {
     if (record.eventName == "INSERT") {
       const data = AWS.DynamoDB.Converter.unmarshall(record.dynamodb.NewImage);
 
-      if (typeof data?.event?.aggregateId !== "string") return;
+      if (typeof data?.aggregateId !== "string") return;
 
       await producer.send({
         topic: eventsTopic,
-        messages: [
-          { key: data.event.aggregateId, value: JSON.stringify(data) },
-        ],
+        messages: [{ key: data.aggregateId, value: JSON.stringify(data) }],
       });
     }
   }

@@ -57,10 +57,6 @@ class EventStore {
             Projection: {
               ProjectionType: "ALL",
             },
-            ProvisionedThroughput: {
-              ReadCapacityUnits: 1,
-              WriteCapacityUnits: 1,
-            },
           },
         ],
       })

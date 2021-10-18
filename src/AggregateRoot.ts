@@ -17,10 +17,13 @@ export default class AggregateRoot {
       version: this.version,
     };
 
+    await EventStore.createEvent(eventData);
+    this.version++;
+
     if (
       this.snapshotIn &&
       this.events.length &&
-      this.events[0].version % this.snapshotIn === 0
+      Number.isInteger(this.events[0].version / this.snapshotIn)
     ) {
       const payload = JSON.parse(JSON.stringify(this));
       delete payload.events;
@@ -30,23 +33,14 @@ export default class AggregateRoot {
 
       const snapshotData = {
         aggregateId: this.aggregateId,
-        version: this.version + 1,
+        version: this.version,
         event: "Snapshot",
         payload: payload,
         published: 1,
       };
 
       this.apply(snapshotData);
-
-      await EventStore.transactWrite([
-        EventStore.createEventTransaction(eventData),
-        EventStore.createEventTransaction(snapshotData),
-      ]);
-
-      this.version = this.version + 2;
-    } else {
-      await EventStore.createEvent(eventData);
-
+      await EventStore.createEvent(snapshotData);
       this.version++;
     }
   }
@@ -63,11 +57,13 @@ export default class AggregateRoot {
           reverse: true,
         })
       ).Items;
-
-      events = events?.reverse();
     } else {
       events = (await EventStore.query(aggregateId)).Items;
     }
+
+    events?.sort(function (a, b) {
+      return Number(a.version) - Number(b.version);
+    });
 
     events?.forEach((event) => {
       this.version = Number(event.version) + 1;
