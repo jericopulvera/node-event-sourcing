@@ -1,5 +1,5 @@
 import EventStore from "./EventStore";
-import { EventDto } from "./Dto";
+import { CreateEventDto, EventDto } from "./Dto";
 import { ItemList } from "aws-sdk/clients/dynamodb";
 
 export default class AggregateRoot {
@@ -8,14 +8,14 @@ export default class AggregateRoot {
   public events: EventDto[] = [];
   public snapshotIn = 0;
 
-  public async createEvent(eventData: EventDto): Promise<void> {
-    this.apply(eventData);
-
-    eventData = {
-      ...eventData,
+  public async createEvent(createEventData: CreateEventDto): Promise<void> {
+    const eventData = {
+      ...createEventData,
       aggregateId: this.aggregateId,
       version: this.version,
     };
+
+    this.apply(eventData);
 
     await EventStore.createEvent(eventData);
     this.version++;

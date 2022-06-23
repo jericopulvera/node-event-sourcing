@@ -1,15 +1,8 @@
-interface Item {
-  productId: string | null;
-  quantity: number;
-}
+import { Item } from "../Dto";
 
 export default class CartItemAdded {
   event = "CartItemAdded";
-
-  payload: Item = {
-    productId: null,
-    quantity: 0,
-  };
+  payload: Item;
 
   constructor(payload: Item) {
     this.payload = payload;

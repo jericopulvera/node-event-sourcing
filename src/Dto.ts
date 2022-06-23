@@ -1,3 +1,8 @@
+interface CreateEventDto {
+  event: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  payload: any;
+}
 interface EventDto {
   aggregateId: string;
   version: number;
@@ -21,4 +26,9 @@ interface ListenerHandlerClassType {
   };
 }
 
-export { EventDto, EventHandlersClassType, ListenerHandlerClassType };
+export {
+  CreateEventDto,
+  EventDto,
+  EventHandlersClassType,
+  ListenerHandlerClassType,
+};

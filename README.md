@@ -4,10 +4,9 @@
 
 ## Features
 
-- [x] Reliable event publisher
+- [x] Reliable event publishing
 - [x] Built for microservices
 - [x] CQRS
-- [ ] Dead letter queue support
 
 ## Current Limitations
 
