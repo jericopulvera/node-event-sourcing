@@ -1,12 +1,13 @@
 import EventStore from "./EventStore";
 import { CreateEventDto, EventDto } from "./Dto";
 import { ItemList } from "aws-sdk/clients/dynamodb";
-
+import clone from "rfdc";
 export default class AggregateRoot {
   public aggregateId!: string;
   public version = 0;
   public events: EventDto[] = [];
   public snapshotIn = 0;
+  payload: unknown;
 
   public async createEvent(createEventData: CreateEventDto): Promise<void> {
     const eventData = {
@@ -23,7 +24,8 @@ export default class AggregateRoot {
     if (
       this.snapshotIn &&
       this.events.length &&
-      Number.isInteger(this.events[0].version / this.snapshotIn)
+      Number.isInteger(this.version / this.snapshotIn) &&
+      this.version >= this.snapshotIn
     ) {
       const payload = JSON.parse(JSON.stringify(this));
       delete payload.events;
@@ -57,13 +59,34 @@ export default class AggregateRoot {
           reverse: true,
         })
       ).Items;
+
+      events?.sort(function (a, b) {
+        return Number(a.version) - Number(b.version);
+      });
     } else {
       events = (await EventStore.query(aggregateId)).Items;
     }
 
-    events?.sort(function (a, b) {
-      return Number(a.version) - Number(b.version);
+    events?.forEach((event) => {
+      this.version = Number(event.version) + 1;
+      this.apply({
+        aggregateId: String(event.aggregateId),
+        version: Number(event.version),
+        event: String(event.event),
+        payload: event.payload,
+      });
     });
+
+    return this;
+  }
+
+  public async retrieveAll(aggregateId: string): Promise<this> {
+    this.aggregateId = aggregateId;
+    this.events = [];
+    this.payload = undefined;
+    let events: ItemList | undefined = [];
+
+    events = (await EventStore.query(aggregateId)).Items;
 
     events?.forEach((event) => {
       this.version = Number(event.version) + 1;
@@ -79,11 +102,12 @@ export default class AggregateRoot {
   }
 
   public apply(event: EventDto): void {
+    const eventData = clone()(event);
     // @ts-ignore
     if (typeof this[`apply${event.event}`] === "function") {
       // @ts-ignore
-      this[`apply${event.event}`](event.payload);
+      this[`apply${event.event}`]({ ...eventData.payload });
     }
-    this.events.push(event);
+    this.events.push({ ...eventData });
   }
 }

@@ -3,5 +3,5 @@
 module.exports = {
   preset: "ts-jest",
   testEnvironment: "node",
-  setupFiles: ["./test/Setup.ts"],
+  setupFiles: ["./tests/Setup.ts"],
 };
