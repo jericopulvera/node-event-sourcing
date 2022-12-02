@@ -83,6 +83,7 @@ class EventStore {
   createEventTransaction(eventData: EventDto) {
     return {
       Put: {
+        ConditionExpression: "attribute_not_exists(aggregateId)",
         TableName: this.tableName,
         Item: {
           ...eventData,
@@ -97,6 +98,7 @@ class EventStore {
   async createEvent(eventData: EventDto) {
     return await this.documentClient
       .put({
+        ConditionExpression: "attribute_not_exists(aggregateId)",
         TableName: this.tableName,
         Item: {
           ...eventData,

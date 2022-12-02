@@ -4,9 +4,14 @@ dotenv.config();
 jest.setTimeout(30000);
 
 import EventStore from "../src/EventStore";
-export default async (): Promise<void> => {
+
+const setup = async (): Promise<void> => {
   try {
     await EventStore.createTable();
     // eslint-disable-next-line no-empty
   } catch (_) {}
 };
+
+setup();
+
+export default setup;
